@@ -1,6 +1,5 @@
 import React from "react";
 import { Menu, Bell, Search, Settings, User } from "lucide-react";
-import { useApp } from "../../contexts/AppContext";
 
 interface HeaderProps {
   toggleSidebar: () => void;

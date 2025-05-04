@@ -42,7 +42,7 @@ const Forms: React.FC = () => {
     const formToDuplicate = forms.find((f) => f.id === formId);
     if (formToDuplicate) {
       // Create a duplicate form but change the name to indicate it's a copy
-      const { id, createdAt, updatedAt, ...rest } = formToDuplicate;
+      const { ...rest } = formToDuplicate;
       const duplicatedForm = {
         ...rest,
         name: `${rest.name} (Copy)`,

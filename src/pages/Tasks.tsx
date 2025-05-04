@@ -69,7 +69,7 @@ const Tasks: React.FC = () => {
         workflowId: "",
       });
       addToast("Task added successfully", "success");
-    } catch (error) {
+    } catch {
       addToast("Failed to add task", "error");
     }
   };

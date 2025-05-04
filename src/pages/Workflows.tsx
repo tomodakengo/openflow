@@ -67,7 +67,7 @@ const Workflows: React.FC = () => {
     const workflowToDuplicate = workflows.find((w) => w.id === workflowId);
     if (workflowToDuplicate) {
       // Create a duplicate workflow but change the name to indicate it's a copy
-      const { id, createdAt, updatedAt, ...rest } = workflowToDuplicate;
+      const { ...rest } = workflowToDuplicate;
       const duplicatedWorkflow = {
         ...rest,
         name: `${rest.name} (Copy)`,
@@ -78,7 +78,7 @@ const Workflows: React.FC = () => {
       try {
         updateWorkflow(workflowId, duplicatedWorkflow);
         addToast("Workflow duplicated successfully", "success");
-      } catch (error) {
+      } catch {
         addToast("Failed to duplicate workflow", "error");
       }
     }

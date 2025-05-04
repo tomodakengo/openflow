@@ -1,13 +1,6 @@
 import React, { useState } from "react";
 import { useApp } from "../contexts/AppContext";
-import {
-  Download,
-  Filter,
-  BarChart as BarChartIcon,
-  PieChart as PieChartIcon,
-  LineChart as LineChartIcon,
-  RefreshCw,
-} from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import {
   BarChart,
   Bar,
