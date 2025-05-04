@@ -1,5 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { mockUsers, mockWorkflows, mockForms, mockTasks } from '../data/mockData';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import {
+  mockUsers,
+  mockWorkflows,
+  mockForms,
+  mockTasks,
+} from "../data/mockData";
 
 interface User {
   id: string;
@@ -13,7 +24,7 @@ interface Workflow {
   id: string;
   name: string;
   description: string;
-  status: 'active' | 'draft' | 'archived';
+  status: "active" | "draft" | "archived";
   steps: WorkflowStep[];
   createdBy: string;
   createdAt: string;
@@ -24,7 +35,7 @@ interface WorkflowStep {
   id: string;
   name: string;
   type: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   position: { x: number; y: number };
 }
 
@@ -46,16 +57,16 @@ interface FormField {
   required: boolean;
   options?: string[];
   placeholder?: string;
-  defaultValue?: any;
-  validation?: Record<string, any>;
+  defaultValue?: unknown;
+  validation?: Record<string, unknown>;
 }
 
 interface Task {
   id: string;
   title: string;
   description: string;
-  status: 'todo' | 'in_progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
+  status: "todo" | "in_progress" | "completed";
+  priority: "low" | "medium" | "high";
   assignedTo: string;
   dueDate: string;
   workflowId?: string;
@@ -72,13 +83,15 @@ interface AppContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  addWorkflow: (workflow: Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'>) => Workflow;
+  addWorkflow: (
+    workflow: Omit<Workflow, "id" | "createdAt" | "updatedAt">
+  ) => Workflow;
   updateWorkflow: (id: string, workflow: Partial<Workflow>) => Workflow | null;
   deleteWorkflow: (id: string) => boolean;
-  addForm: (form: Omit<Form, 'id' | 'createdAt' | 'updatedAt'>) => Form;
+  addForm: (form: Omit<Form, "id" | "createdAt" | "updatedAt">) => Form;
   updateForm: (id: string, form: Partial<Form>) => Form | null;
   deleteForm: (id: string) => boolean;
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Task;
+  addTask: (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => Task;
   updateTask: (id: string, task: Partial<Task>) => Task | null;
   deleteTask: (id: string) => boolean;
 }
@@ -88,7 +101,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const useApp = (): AppContextType => {
   const context = useContext(AppContext);
   if (!context) {
-    throw new Error('useApp must be used within an AppProvider');
+    throw new Error("useApp must be used within an AppProvider");
   }
   return context;
 };
@@ -99,7 +112,7 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users] = useState<User[]>(mockUsers);
   const [workflows, setWorkflows] = useState<Workflow[]>(mockWorkflows);
   const [forms, setForms] = useState<Form[]>(mockForms);
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
@@ -107,22 +120,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   // Check if user is already logged in (from local storage)
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
+    const storedUser = localStorage.getItem("currentUser");
     if (storedUser) {
       setCurrentUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string): Promise<boolean> => {
     // Simulate API call
     return new Promise((resolve) => {
       setTimeout(() => {
-        const user = users.find(u => u.email === email);
+        const user = users.find((u) => u.email === email);
         if (user) {
           setCurrentUser(user);
           setIsAuthenticated(true);
-          localStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem("currentUser", JSON.stringify(user));
           resolve(true);
         } else {
           resolve(false);
@@ -134,123 +147,132 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const logout = () => {
     setCurrentUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem("currentUser");
   };
 
-  const addWorkflow = (workflow: Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'>): Workflow => {
+  const addWorkflow = (
+    workflow: Omit<Workflow, "id" | "createdAt" | "updatedAt">
+  ): Workflow => {
     const newWorkflow: Workflow = {
       ...workflow,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     setWorkflows([...workflows, newWorkflow]);
     return newWorkflow;
   };
 
-  const updateWorkflow = (id: string, workflow: Partial<Workflow>): Workflow | null => {
-    const index = workflows.findIndex(w => w.id === id);
+  const updateWorkflow = (
+    id: string,
+    workflow: Partial<Workflow>
+  ): Workflow | null => {
+    const index = workflows.findIndex((w) => w.id === id);
     if (index === -1) return null;
-    
+
     const updatedWorkflow = {
       ...workflows[index],
       ...workflow,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
-    
+
     const updatedWorkflows = [...workflows];
     updatedWorkflows[index] = updatedWorkflow;
     setWorkflows(updatedWorkflows);
-    
+
     return updatedWorkflow;
   };
 
   const deleteWorkflow = (id: string): boolean => {
-    const index = workflows.findIndex(w => w.id === id);
+    const index = workflows.findIndex((w) => w.id === id);
     if (index === -1) return false;
-    
+
     const updatedWorkflows = [...workflows];
     updatedWorkflows.splice(index, 1);
     setWorkflows(updatedWorkflows);
-    
+
     return true;
   };
 
-  const addForm = (form: Omit<Form, 'id' | 'createdAt' | 'updatedAt'>): Form => {
+  const addForm = (
+    form: Omit<Form, "id" | "createdAt" | "updatedAt">
+  ): Form => {
     const newForm: Form = {
       ...form,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     setForms([...forms, newForm]);
     return newForm;
   };
 
   const updateForm = (id: string, form: Partial<Form>): Form | null => {
-    const index = forms.findIndex(f => f.id === id);
+    const index = forms.findIndex((f) => f.id === id);
     if (index === -1) return null;
-    
+
     const updatedForm = {
       ...forms[index],
       ...form,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
-    
+
     const updatedForms = [...forms];
     updatedForms[index] = updatedForm;
     setForms(updatedForms);
-    
+
     return updatedForm;
   };
 
   const deleteForm = (id: string): boolean => {
-    const index = forms.findIndex(f => f.id === id);
+    const index = forms.findIndex((f) => f.id === id);
     if (index === -1) return false;
-    
+
     const updatedForms = [...forms];
     updatedForms.splice(index, 1);
     setForms(updatedForms);
-    
+
     return true;
   };
 
-  const addTask = (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Task => {
+  const addTask = (
+    task: Omit<Task, "id" | "createdAt" | "updatedAt">
+  ): Task => {
     const newTask: Task = {
       ...task,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
     setTasks([...tasks, newTask]);
     return newTask;
   };
 
   const updateTask = (id: string, task: Partial<Task>): Task | null => {
-    const index = tasks.findIndex(t => t.id === id);
+    const index = tasks.findIndex((t) => t.id === id);
     if (index === -1) return null;
-    
+
     const updatedTask = {
       ...tasks[index],
       ...task,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
-    
+
     const updatedTasks = [...tasks];
     updatedTasks[index] = updatedTask;
     setTasks(updatedTasks);
-    
+
     return updatedTask;
   };
 
   const deleteTask = (id: string): boolean => {
-    const index = tasks.findIndex(t => t.id === id);
+    const index = tasks.findIndex((t) => t.id === id);
     if (index === -1) return false;
-    
+
     const updatedTasks = [...tasks];
     updatedTasks.splice(index, 1);
     setTasks(updatedTasks);
-    
+
     return true;
   };
 
@@ -271,7 +293,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     deleteForm,
     addTask,
     updateTask,
-    deleteTask
+    deleteTask,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import Header from './Header';
-import { Menu, X } from 'lucide-react';
+import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import Header from "./Header";
+import { X } from "lucide-react";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,13 +11,14 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  
+
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
   // Check if the user is on the login or register page
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/register";
 
   if (isAuthPage) {
     return <>{children}</>;
@@ -26,8 +27,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100">
       {/* Sidebar for mobile */}
-      <div className={`fixed inset-0 z-40 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={toggleSidebar}></div>
+      <div
+        className={`fixed inset-0 z-40 lg:hidden ${
+          sidebarOpen ? "block" : "hidden"
+        }`}
+      >
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          onClick={toggleSidebar}
+        ></div>
         <div className="relative flex h-full w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
@@ -53,9 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className="flex flex-1 flex-col lg:pl-64">
         <Header toggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-auto p-4 md:p-6 z-0">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto p-4 md:p-6 z-0">{children}</main>
       </div>
     </div>
   );

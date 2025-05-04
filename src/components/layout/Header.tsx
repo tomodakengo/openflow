@@ -1,14 +1,12 @@
-import React from 'react';
-import { Menu, Bell, Search, Settings, User } from 'lucide-react';
-import { useApp } from '../../contexts/AppContext';
+import React from "react";
+import { Menu, Bell, Search, Settings, User } from "lucide-react";
+import { useApp } from "../../contexts/AppContext";
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
-  const { currentUser } = useApp();
-
   return (
     <header className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow-sm">
       <div className="flex flex-1 items-center justify-between px-4 md:px-6">
@@ -22,10 +20,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             <Menu className="h-6 w-6" />
           </button>
         </div>
-        
+
         <div className="flex flex-1 items-center justify-center px-2 lg:ml-6 lg:justify-start">
           <div className="w-full max-w-lg lg:max-w-xs">
-            <label htmlFor="search" className="sr-only">Search</label>
+            <label htmlFor="search" className="sr-only">
+              Search
+            </label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <Search className="h-5 w-5 text-gray-400" />
@@ -40,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center">
           <button
             type="button"
