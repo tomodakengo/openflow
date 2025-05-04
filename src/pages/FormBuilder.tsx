@@ -14,6 +14,15 @@ import {
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 
+interface FormFieldValidation {
+  min?: number;
+  max?: number;
+  allowMultiple?: boolean;
+  acceptedTypes?: string;
+  signatureType?: string;
+  includeDate?: boolean;
+}
+
 interface FormField {
   id: string;
   name: string;
@@ -23,7 +32,7 @@ interface FormField {
   options?: string[];
   placeholder?: string;
   defaultValue?: unknown;
-  validation?: Record<string, unknown>;
+  validation?: FormFieldValidation;
 }
 
 const fieldTypes = [
@@ -38,6 +47,7 @@ const fieldTypes = [
   { value: "date", label: "Date Picker" },
   { value: "time", label: "Time Picker" },
   { value: "file", label: "File Upload" },
+  { value: "signature", label: "Electronic Signature" },
 ];
 
 const FormBuilder: React.FC = () => {
@@ -187,11 +197,11 @@ const FormBuilder: React.FC = () => {
   const saveForm = () => {
     if (id) {
       // Update existing form
-      updateForm(id, form);
+      updateForm(id, form as unknown as Partial<Form>);
       addToast("Form updated successfully", "success");
     } else {
       // Create new form
-      const newForm = addForm(form);
+      const newForm = addForm(form as unknown as Omit<Form, "id" | "createdAt" | "updatedAt">);
       navigate(`/forms/${newForm.id}`);
       addToast("Form created successfully", "success");
     }
@@ -340,7 +350,16 @@ const FormBuilder: React.FC = () => {
               )}
 
               {field.type === "file" && (
-                <input type="file" className="form-input" disabled />
+                <div className="border-2 border-dashed border-gray-300 p-4 text-center bg-gray-50">
+                  <span className="text-gray-500">Drop files here or click to upload</span>
+                  <input type="file" className="form-input hidden" disabled />
+                </div>
+              )}
+              
+              {field.type === "signature" && (
+                <div className="border-2 border-dashed border-gray-300 p-4 text-center bg-gray-50">
+                  <span className="text-gray-500">Signature field (Click to sign)</span>
+                </div>
               )}
             </div>
           ))}
@@ -602,6 +621,113 @@ const FormBuilder: React.FC = () => {
                       <span className="text-xs text-gray-500 mt-1">
                         Enter each option on a new line
                       </span>
+                    </div>
+                  )}
+
+                  {form.fields[selectedFieldIndex].type === "file" && (
+                    <div className="form-control">
+                      <label className="form-label">File Upload Settings</label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              checked={form.fields[selectedFieldIndex].validation?.allowMultiple || false}
+                              onChange={(e) => {
+                                const validation =
+                                  form.fields[selectedFieldIndex].validation || {};
+                                updateFieldProperty(
+                                  selectedFieldIndex,
+                                  "validation",
+                                  {
+                                    ...validation,
+                                    allowMultiple: e.target.checked,
+                                  }
+                                );
+                              }}
+                            />
+                            <span className="ml-2">Allow Multiple Files</span>
+                          </label>
+                        </div>
+                        <div className="form-control">
+                          <label className="form-label">Accepted File Types</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder=".pdf,.jpg,.png"
+                            value={form.fields[selectedFieldIndex].validation?.acceptedTypes || ""}
+                            onChange={(e) => {
+                              const validation =
+                                form.fields[selectedFieldIndex].validation || {};
+                              updateFieldProperty(
+                                selectedFieldIndex,
+                                "validation",
+                                {
+                                  ...validation,
+                                  acceptedTypes: e.target.value,
+                                }
+                              );
+                            }}
+                          />
+                          <span className="text-xs text-gray-500 mt-1">
+                            Comma separated file extensions (e.g., .pdf,.jpg)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {form.fields[selectedFieldIndex].type === "signature" && (
+                    <div className="form-control">
+                      <label className="form-label">Signature Settings</label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="form-control">
+                          <label className="form-label">Signature Type</label>
+                          <select
+                            className="form-select"
+                            value={form.fields[selectedFieldIndex].validation?.signatureType || "draw"}
+                            onChange={(e) => {
+                              const validation =
+                                form.fields[selectedFieldIndex].validation || {};
+                              updateFieldProperty(
+                                selectedFieldIndex,
+                                "validation",
+                                {
+                                  ...validation,
+                                  signatureType: e.target.value,
+                                }
+                              );
+                            }}
+                          >
+                            <option value="draw">Draw Signature</option>
+                            <option value="type">Type Signature</option>
+                            <option value="upload">Upload Signature</option>
+                          </select>
+                        </div>
+                        <div className="form-control">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              checked={form.fields[selectedFieldIndex].validation?.includeDate || false}
+                              onChange={(e) => {
+                                const validation =
+                                  form.fields[selectedFieldIndex].validation || {};
+                                updateFieldProperty(
+                                  selectedFieldIndex,
+                                  "validation",
+                                  {
+                                    ...validation,
+                                    includeDate: e.target.checked,
+                                  }
+                                );
+                              }}
+                            />
+                            <span className="ml-2">Include Date with Signature</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   )}
 
