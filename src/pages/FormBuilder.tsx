@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
-import { Form } from "../contexts/AppContext";
 import { useToast } from "../contexts/ToastContext";
 import {
   Save,
@@ -198,11 +197,11 @@ const FormBuilder: React.FC = () => {
   const saveForm = () => {
     if (id) {
       // Update existing form
-      updateForm(id, form as unknown as Partial<Form>);
+      updateForm(id, form);
       addToast("Form updated successfully", "success");
     } else {
       // Create new form
-      const newForm = addForm(form as unknown as Omit<Form, "id" | "createdAt" | "updatedAt">);
+      const newForm = addForm(form);
       navigate(`/forms/${newForm.id}`);
       addToast("Form created successfully", "success");
     }
