@@ -75,7 +75,7 @@ const Reports: React.FC = () => {
     }
     
     // Generate random data for each day in the range
-    let currentDate = new Date(startDate);
+    const currentDate = new Date(startDate);
     while (currentDate <= now) {
       data.push({
         date: new Date(currentDate).toLocaleDateString(),
