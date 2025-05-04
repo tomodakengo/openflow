@@ -12,6 +12,10 @@ import {
   AlertCircle,
   CheckSquare,
   X,
+  Link,
+  Link2Off,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 const Tasks: React.FC = () => {
@@ -21,6 +25,8 @@ const Tasks: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [showAddTask, setShowAddTask] = useState(false);
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [newTask, setNewTask] = useState<{
     title: string;
     description: string;
@@ -29,6 +35,7 @@ const Tasks: React.FC = () => {
     assignedTo: string;
     dueDate: string;
     workflowId: string;
+    dependencies: string[];
   }>({
     title: "",
     description: "",
@@ -37,6 +44,7 @@ const Tasks: React.FC = () => {
     assignedTo: "",
     dueDate: "",
     workflowId: "",
+    dependencies: [],
   });
 
   // Filter tasks by search term, status, and priority
@@ -51,6 +59,47 @@ const Tasks: React.FC = () => {
 
     return matchesSearch && matchesStatus && matchesPriority;
   });
+
+  const toggleTaskSelection = (taskId: string) => {
+    setSelectedTasks(prev => {
+      if (prev.includes(taskId)) {
+        return prev.filter(id => id !== taskId);
+      } else {
+        return [...prev, taskId];
+      }
+    });
+    
+    setShowBulkActions(() => {
+      const isCurrentlySelected = selectedTasks.includes(taskId);
+      const willHaveNoSelection = isCurrentlySelected && selectedTasks.length === 1;
+      const willHaveSelection = !isCurrentlySelected || selectedTasks.length > 1;
+      
+      return willHaveSelection && !willHaveNoSelection;
+    });
+  };
+  
+  const handleBulkStatusChange = (status: "todo" | "in_progress" | "completed") => {
+    selectedTasks.forEach(taskId => {
+      updateTask(taskId, { status });
+    });
+    addToast(`Updated ${selectedTasks.length} tasks to ${status.replace('_', ' ')}`, "success");
+    setSelectedTasks([]);
+    setShowBulkActions(false);
+  };
+  
+  const handleBulkDelete = () => {
+    if (window.confirm(`Are you sure you want to delete ${selectedTasks.length} tasks?`)) {
+      let successCount = 0;
+      selectedTasks.forEach(taskId => {
+        const success = deleteTask(taskId);
+        if (success) successCount++;
+      });
+      
+      addToast(`Deleted ${successCount} tasks successfully`, "success");
+      setSelectedTasks([]);
+      setShowBulkActions(false);
+    }
+  };
 
   const handleAddTask = () => {
     if (!newTask.title || !newTask.assignedTo || !newTask.dueDate) {
@@ -75,6 +124,7 @@ const Tasks: React.FC = () => {
         assignedTo: "",
         dueDate: "",
         workflowId: "",
+        dependencies: [],
       });
       addToast("Task added successfully", "success");
     } catch {
@@ -216,12 +266,70 @@ const Tasks: React.FC = () => {
         </div>
       </div>
 
+      {/* Bulk Actions */}
+      {showBulkActions && (
+        <div className="bg-white p-4 rounded-lg shadow mb-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="text-sm font-medium text-gray-700 mr-2">
+              {selectedTasks.length} tasks selected
+            </span>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={() => handleBulkStatusChange("todo")}
+            >
+              Set To Do
+            </button>
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={() => handleBulkStatusChange("in_progress")}
+            >
+              Set In Progress
+            </button>
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={() => handleBulkStatusChange("completed")}
+            >
+              Set Completed
+            </button>
+            <button
+              className="btn btn-sm btn-error"
+              onClick={handleBulkDelete}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tasks List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {filteredTasks.length > 0 ? (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th
+                  scope="col"
+                  className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTasks(filteredTasks.map(task => task.id));
+                          setShowBulkActions(true);
+                        } else {
+                          setSelectedTasks([]);
+                          setShowBulkActions(false);
+                        }
+                      }}
+                      checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
+                    />
+                  </div>
+                </th>
                 <th
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -265,9 +373,29 @@ const Tasks: React.FC = () => {
                 const assignee = users.find(
                   (user) => user.id === task.assignedTo
                 );
+                
+                // Check if task has dependencies using type assertion
+                const taskWithDeps = task as unknown as { dependencies?: string[] };
+                const hasDependencies = taskWithDeps.dependencies && taskWithDeps.dependencies.length > 0;
+                
+                const dependentTasks = hasDependencies 
+                  ? taskWithDeps.dependencies!.map((depId: string) => 
+                      tasks.find(t => t.id === depId)?.title || "Unknown task"
+                    )
+                  : [];
 
                 return (
                   <tr key={task.id} className="hover:bg-gray-50">
+                    <td className="px-2 py-4">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          checked={selectedTasks.includes(task.id)}
+                          onChange={() => toggleTaskSelection(task.id)}
+                        />
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">
                         {task.title}
@@ -279,6 +407,12 @@ const Tasks: React.FC = () => {
                         <div className="text-xs text-primary-600 mt-1">
                           {workflows.find((w) => w.id === task.workflowId)
                             ?.name || "Unknown workflow"}
+                        </div>
+                      )}
+                      {hasDependencies && (
+                        <div className="text-xs text-gray-500 mt-1 flex items-center">
+                          <Link className="h-3 w-3 mr-1" />
+                          <span>Depends on: {dependentTasks.join(", ")}</span>
                         </div>
                       )}
                     </td>
@@ -538,6 +672,83 @@ const Tasks: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+              
+              {/* Task Dependencies Section */}
+              <div className="form-control mt-4">
+                <div 
+                  className="flex items-center justify-between cursor-pointer" 
+                  onClick={() => {
+                    const dependenciesSection = document.getElementById('dependencies-section');
+                    if (dependenciesSection) {
+                      const isHidden = dependenciesSection.classList.contains('hidden');
+                      if (isHidden) {
+                        dependenciesSection.classList.remove('hidden');
+                      } else {
+                        dependenciesSection.classList.add('hidden');
+                      }
+                    }
+                  }}
+                >
+                  <label className="form-label mb-0">Task Dependencies</label>
+                  <div className="flex items-center">
+                    <ChevronDown className="h-5 w-5 text-gray-500" />
+                    <ChevronUp className="h-5 w-5 text-gray-500 hidden" />
+                  </div>
+                </div>
+                
+                <div id="dependencies-section" className="mt-2 border border-gray-200 rounded-md p-3">
+                  <p className="text-sm text-gray-500 mb-2">
+                    Select tasks that must be completed before this task can start
+                  </p>
+                  
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {tasks.filter(t => t.id).map(task => (
+                      <div key={task.id} className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`dep-${task.id}`}
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 mr-2"
+                            checked={newTask.dependencies.includes(task.id)}
+                            onChange={(e) => {
+                              setNewTask(prev => {
+                                if (e.target.checked) {
+                                  return {
+                                    ...prev,
+                                    dependencies: [...prev.dependencies, task.id]
+                                  };
+                                } else {
+                                  return {
+                                    ...prev,
+                                    dependencies: prev.dependencies.filter(id => id !== task.id)
+                                  };
+                                }
+                              });
+                            }}
+                          />
+                          <label htmlFor={`dep-${task.id}`} className="text-sm">
+                            {task.title}
+                          </label>
+                        </div>
+                        {newTask.dependencies.includes(task.id) && (
+                          <button
+                            type="button"
+                            className="text-gray-400 hover:text-gray-600"
+                            onClick={() => {
+                              setNewTask(prev => ({
+                                ...prev,
+                                dependencies: prev.dependencies.filter(id => id !== task.id)
+                              }));
+                            }}
+                          >
+                            <Link2Off className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
