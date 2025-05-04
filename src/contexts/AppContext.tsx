@@ -10,13 +10,26 @@ import {
   mockWorkflows,
   mockForms,
   mockTasks,
+  mockTeams,
 } from "../data/mockData";
+
+interface Team {
+  id: string;
+  name: string;
+  description: string;
+  parentId?: string; // For hierarchical structure
+  members: string[]; // Array of user IDs
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  teamId?: string; // Department/team association
+  approvalRole?: string; // For approval chains (e.g., "approver", "reviewer")
   avatar?: string;
 }
 
@@ -77,6 +90,7 @@ interface Task {
 interface AppContextType {
   currentUser: User | null;
   users: User[];
+  teams: Team[];
   workflows: Workflow[];
   forms: Form[];
   tasks: Task[];
@@ -94,6 +108,12 @@ interface AppContextType {
   addTask: (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => Task;
   updateTask: (id: string, task: Partial<Task>) => Task | null;
   deleteTask: (id: string) => boolean;
+  addTeam: (team: Omit<Team, "id" | "createdAt" | "updatedAt">) => Team;
+  updateTeam: (id: string, team: Partial<Team>) => Team | null;
+  deleteTeam: (id: string) => boolean;
+  addUserToTeam: (userId: string, teamId: string) => boolean;
+  removeUserFromTeam: (userId: string, teamId: string) => boolean;
+  updateUserApprovalRole: (userId: string, approvalRole: string) => boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -112,7 +132,8 @@ interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [workflows, setWorkflows] = useState<Workflow[]>(mockWorkflows as unknown as Workflow[]);
   const [forms, setForms] = useState<Form[]>(mockForms as unknown as Form[]);
   const [tasks, setTasks] = useState<Task[]>(mockTasks as unknown as Task[]);
@@ -276,9 +297,132 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return true;
   };
 
+  const addTeam = (
+    team: Omit<Team, "id" | "createdAt" | "updatedAt">
+  ): Team => {
+    const newTeam: Team = {
+      ...team,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setTeams([...teams, newTeam]);
+    return newTeam;
+  };
+
+  const updateTeam = (id: string, team: Partial<Team>): Team | null => {
+    const index = teams.findIndex((t) => t.id === id);
+    if (index === -1) return null;
+
+    const updatedTeam = {
+      ...teams[index],
+      ...team,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedTeams = [...teams];
+    updatedTeams[index] = updatedTeam;
+    setTeams(updatedTeams);
+
+    return updatedTeam;
+  };
+
+  const deleteTeam = (id: string): boolean => {
+    const index = teams.findIndex((t) => t.id === id);
+    if (index === -1) return false;
+
+    const updatedTeams = [...teams];
+    updatedTeams.splice(index, 1);
+    setTeams(updatedTeams);
+
+    return true;
+  };
+
+  const addUserToTeam = (userId: string, teamId: string): boolean => {
+    const teamIndex = teams.findIndex((t) => t.id === teamId);
+    if (teamIndex === -1) return false;
+
+    const userExists = users.some((u) => u.id === userId);
+    if (!userExists) return false;
+
+    // Check if user is already in the team
+    if (teams[teamIndex].members.includes(userId)) return true;
+
+    const updatedTeam = {
+      ...teams[teamIndex],
+      members: [...teams[teamIndex].members, userId],
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedTeams = [...teams];
+    updatedTeams[teamIndex] = updatedTeam;
+    setTeams(updatedTeams);
+
+    const userIndex = users.findIndex((u) => u.id === userId);
+    const updatedUser = {
+      ...users[userIndex],
+      teamId: teamId,
+    };
+
+    const updatedUsers = [...users];
+    updatedUsers[userIndex] = updatedUser;
+    setUsers(updatedUsers);
+
+    return true;
+  };
+
+  const removeUserFromTeam = (userId: string, teamId: string): boolean => {
+    const teamIndex = teams.findIndex((t) => t.id === teamId);
+    if (teamIndex === -1) return false;
+
+    // Check if user is in the team
+    if (!teams[teamIndex].members.includes(userId)) return true;
+
+    const updatedTeam = {
+      ...teams[teamIndex],
+      members: teams[teamIndex].members.filter((id) => id !== userId),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedTeams = [...teams];
+    updatedTeams[teamIndex] = updatedTeam;
+    setTeams(updatedTeams);
+
+    const userIndex = users.findIndex((u) => u.id === userId);
+    if (userIndex !== -1) {
+      const updatedUser = {
+        ...users[userIndex],
+        teamId: undefined,
+      };
+
+      const updatedUsers = [...users];
+      updatedUsers[userIndex] = updatedUser;
+      setUsers(updatedUsers);
+    }
+
+    return true;
+  };
+
+  const updateUserApprovalRole = (userId: string, approvalRole: string): boolean => {
+    const userIndex = users.findIndex((u) => u.id === userId);
+    if (userIndex === -1) return false;
+
+    const updatedUser = {
+      ...users[userIndex],
+      approvalRole,
+    };
+
+    const updatedUsers = [...users];
+    updatedUsers[userIndex] = updatedUser;
+    setUsers(updatedUsers);
+
+    return true;
+  };
+
   const value = {
     currentUser,
     users,
+    teams,
     workflows,
     forms,
     tasks,
@@ -294,6 +438,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     addTask,
     updateTask,
     deleteTask,
+    addTeam,
+    updateTeam,
+    deleteTeam,
+    addUserToTeam,
+    removeUserFromTeam,
+    updateUserApprovalRole,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
