@@ -113,9 +113,9 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users] = useState<User[]>(mockUsers);
-  const [workflows, setWorkflows] = useState<Workflow[]>(mockWorkflows);
-  const [forms, setForms] = useState<Form[]>(mockForms);
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const [workflows, setWorkflows] = useState<Workflow[]>(mockWorkflows as unknown as Workflow[]);
+  const [forms, setForms] = useState<Form[]>(mockForms as unknown as Form[]);
+  const [tasks, setTasks] = useState<Task[]>(mockTasks as unknown as Task[]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   // Check if user is already logged in (from local storage)

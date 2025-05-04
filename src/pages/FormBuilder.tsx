@@ -12,7 +12,7 @@ import {
   Settings,
   ArrowLeft,
 } from "lucide-react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 
 interface FormField {
   id: string;
@@ -155,10 +155,7 @@ const FormBuilder: React.FC = () => {
     }));
   };
 
-  const handleDragEnd = (result: {
-    destination: { index: number } | null;
-    source: { index: number };
-  }) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const newFields = [...form.fields];
@@ -618,7 +615,7 @@ const FormBuilder: React.FC = () => {
                           type="number"
                           className="form-input"
                           value={
-                            form.fields[selectedFieldIndex].validation?.min ||
+                            form.fields[selectedFieldIndex].validation?.min as string | number ||
                             ""
                           }
                           onChange={(e) => {
@@ -644,7 +641,7 @@ const FormBuilder: React.FC = () => {
                           type="number"
                           className="form-input"
                           value={
-                            form.fields[selectedFieldIndex].validation?.max ||
+                            form.fields[selectedFieldIndex].validation?.max as string | number ||
                             ""
                           }
                           onChange={(e) => {

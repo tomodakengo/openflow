@@ -24,6 +24,25 @@ interface DraggingNodeState {
   offsetY: number;
 }
 
+interface WorkflowStep {
+  id: string;
+  name: string;
+  type: string;
+  config: Record<string, unknown>;
+  position: { x: number; y: number };
+}
+
+interface WorkflowType {
+  id: string;
+  name: string;
+  description: string;
+  status: "draft" | "active" | "archived";
+  steps: WorkflowStep[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const WorkflowBuilder: React.FC = () => {
   const { id } = useParams();
   const { workflows, addWorkflow, updateWorkflow } = useApp();
@@ -34,6 +53,9 @@ const WorkflowBuilder: React.FC = () => {
   const [draggingNode, setDraggingNode] = useState<DraggingNodeState | null>(
     null
   );
+  const [zoom, setZoom] = useState<number>(1);
+  const [mousePosition, setMousePosition] = useState<Position>({ x: 0, y: 0 });
+  const [connectionStart, setConnectionStart] = useState<string | null>(null);
   const [isDrawingConnection, setIsDrawingConnection] =
     useState<boolean>(false);
   const [showNodePicker, setShowNodePicker] = useState<boolean>(false);
@@ -41,11 +63,11 @@ const WorkflowBuilder: React.FC = () => {
     x: 0,
     y: 0,
   });
-  const [workflow, setWorkflow] = useState({
+  const [workflow, setWorkflow] = useState<WorkflowType>({
     id: "",
     name: "New Workflow",
     description: "Workflow description",
-    status: "draft" as const,
+    status: "draft",
     steps: [],
     createdBy: "1",
     createdAt: new Date().toISOString(),
@@ -72,7 +94,7 @@ const WorkflowBuilder: React.FC = () => {
     if (id) {
       const existingWorkflow = workflows.find((w) => w.id === id);
       if (existingWorkflow) {
-        setWorkflow(existingWorkflow);
+        setWorkflow(existingWorkflow as unknown as WorkflowType);
       } else {
         navigate("/workflows");
         addToast("Workflow not found", "error");
@@ -163,7 +185,7 @@ const WorkflowBuilder: React.FC = () => {
 
   const handleMouseUp = () => {
     setDraggingNode(null);
-    if (isDrawingConnection) {
+    if (isDrawingConnection && connectionStart) {
       setIsDrawingConnection(false);
       setConnectionStart(null);
     }
@@ -288,10 +310,32 @@ const WorkflowBuilder: React.FC = () => {
               {/* Connection ports */}
               <div className="mt-2 flex justify-between">
                 <div className="flex">
-                  <div className="w-4 h-4 rounded-full bg-gray-300 hover:bg-primary-500 cursor-pointer" />
+                  <div 
+                    className="w-4 h-4 rounded-full bg-gray-300 hover:bg-primary-500 cursor-pointer" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConnectionStart(step.id);
+                      setIsDrawingConnection(true);
+                    }}
+                  />
                 </div>
                 <div className="flex">
-                  <div className="w-4 h-4 rounded-full bg-gray-300 hover:bg-primary-500 cursor-pointer" />
+                  <div 
+                    className="w-4 h-4 rounded-full bg-gray-300 hover:bg-primary-500 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (connectionStart && connectionStart !== step.id) {
+                        // Create connection
+                        setWorkflow(prev => {
+                          const updatedSteps = [...prev.steps];
+                          // Update connection info here
+                          return { ...prev, steps: updatedSteps };
+                        });
+                      }
+                      setConnectionStart(null);
+                      setIsDrawingConnection(false);
+                    }}
+                  />
                 </div>
               </div>
             </div>

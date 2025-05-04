@@ -11,6 +11,7 @@ import {
   ArrowRight,
   AlertCircle,
   CheckSquare,
+  X,
 } from "lucide-react";
 
 const Tasks: React.FC = () => {
@@ -20,11 +21,19 @@ const Tasks: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [showAddTask, setShowAddTask] = useState(false);
-  const [newTask, setNewTask] = useState({
+  const [newTask, setNewTask] = useState<{
+    title: string;
+    description: string;
+    status: "todo" | "in_progress" | "completed";
+    priority: "low" | "medium" | "high";
+    assignedTo: string;
+    dueDate: string;
+    workflowId: string;
+  }>({
     title: "",
     description: "",
-    status: "todo" as const,
-    priority: "medium" as const,
+    status: "todo",
+    priority: "medium",
     assignedTo: "",
     dueDate: "",
     workflowId: "",
