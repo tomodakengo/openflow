@@ -194,24 +194,14 @@ const FormBuilder: React.FC = () => {
     }
   };
 
-  interface AppForm {
-    id: string;
-    name: string;
-    description: string;
-    fields: FormField[];
-    createdBy: string;
-    createdAt: string;
-    updatedAt: string;
-  }
-
   const saveForm = () => {
     if (id) {
       // Update existing form
-      updateForm(id, form as unknown as AppForm);
+      updateForm(id, form as unknown as Record<string, unknown>);
       addToast("Form updated successfully", "success");
     } else {
       // Create new form
-      const newForm = addForm(form as unknown as AppForm);
+      const newForm = addForm(form as unknown as Record<string, unknown>);
       navigate(`/forms/${newForm.id}`);
       addToast("Form created successfully", "success");
     }
