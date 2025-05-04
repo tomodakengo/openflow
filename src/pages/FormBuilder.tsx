@@ -197,11 +197,13 @@ const FormBuilder: React.FC = () => {
   const saveForm = () => {
     if (id) {
       // Update existing form
-      updateForm(id, form);
+      const formToUpdate = { ...form };
+      updateForm(id, formToUpdate);
       addToast("Form updated successfully", "success");
     } else {
       // Create new form
-      const newForm = addForm(form);
+      const formToAdd = { ...form };
+      const newForm = addForm(formToAdd);
       navigate(`/forms/${newForm.id}`);
       addToast("Form created successfully", "success");
     }
