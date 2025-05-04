@@ -235,7 +235,7 @@ const FormBuilder: React.FC = () => {
           <h2 className="text-xl font-bold mb-6">{form.name}</h2>
           <p className="text-gray-600 mb-8">{form.description}</p>
 
-          {form.fields.map((field, index) => (
+          {form.fields.map((field) => (
             <div key={field.id} className="mb-6">
               <label
                 className={`block text-sm font-medium mb-2 ${

@@ -4,7 +4,6 @@ import { useToast } from "../contexts/ToastContext";
 import {
   Plus,
   Search,
-  Filter,
   Edit2,
   Trash2,
   CheckCircle,
