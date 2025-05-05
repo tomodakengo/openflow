@@ -24,6 +24,31 @@ interface DraggingNodeState {
   offsetY: number;
 }
 
+interface Connection {
+  source: string;
+  target: string;
+}
+
+interface WorkflowStep {
+  id: string;
+  name: string;
+  type: string;
+  config: Record<string, unknown>;
+  position: { x: number; y: number };
+  connections?: Connection[];
+}
+
+interface WorkflowType {
+  id: string;
+  name: string;
+  description: string;
+  status: "draft" | "active" | "archived";
+  steps: WorkflowStep[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const WorkflowBuilder: React.FC = () => {
   const { id } = useParams();
   const { workflows, addWorkflow, updateWorkflow } = useApp();
@@ -34,6 +59,9 @@ const WorkflowBuilder: React.FC = () => {
   const [draggingNode, setDraggingNode] = useState<DraggingNodeState | null>(
     null
   );
+  const [zoom] = useState<number>(1);
+  const [mousePosition, setMousePosition] = useState<Position>({ x: 0, y: 0 });
+  const [connectionStart, setConnectionStart] = useState<string | null>(null);
   const [isDrawingConnection, setIsDrawingConnection] =
     useState<boolean>(false);
   const [showNodePicker, setShowNodePicker] = useState<boolean>(false);
@@ -41,11 +69,11 @@ const WorkflowBuilder: React.FC = () => {
     x: 0,
     y: 0,
   });
-  const [workflow, setWorkflow] = useState({
+  const [workflow, setWorkflow] = useState<WorkflowType>({
     id: "",
     name: "New Workflow",
     description: "Workflow description",
-    status: "draft" as const,
+    status: "draft",
     steps: [],
     createdBy: "1",
     createdAt: new Date().toISOString(),
@@ -72,7 +100,7 @@ const WorkflowBuilder: React.FC = () => {
     if (id) {
       const existingWorkflow = workflows.find((w) => w.id === id);
       if (existingWorkflow) {
-        setWorkflow(existingWorkflow);
+        setWorkflow(existingWorkflow as unknown as WorkflowType);
       } else {
         navigate("/workflows");
         addToast("Workflow not found", "error");
@@ -163,7 +191,7 @@ const WorkflowBuilder: React.FC = () => {
 
   const handleMouseUp = () => {
     setDraggingNode(null);
-    if (isDrawingConnection) {
+    if (isDrawingConnection && connectionStart) {
       setIsDrawingConnection(false);
       setConnectionStart(null);
     }
@@ -236,6 +264,79 @@ const WorkflowBuilder: React.FC = () => {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
         >
+          {/* Connection lines */}
+          {workflow.steps.map((step) => 
+            (step.connections || []).map((connection, idx) => {
+              const sourceStep = workflow.steps.find(s => s.id === connection.source);
+              const targetStep = workflow.steps.find(s => s.id === connection.target);
+              
+              if (!sourceStep || !targetStep) return null;
+              
+              const sourceX = sourceStep.position.x * zoom + 200; // Right side of source node
+              const sourceY = sourceStep.position.y * zoom + 50;  // Middle of source node
+              const targetX = targetStep.position.x * zoom;       // Left side of target node
+              const targetY = targetStep.position.y * zoom + 50;  // Middle of target node
+              
+              return (
+                <svg 
+                  key={`connection-${idx}`} 
+                  className="absolute top-0 left-0 w-full h-full pointer-events-none z-0"
+                >
+                  <line
+                    x1={sourceX}
+                    y1={sourceY}
+                    x2={targetX}
+                    y2={targetY}
+                    stroke="#6366F1"
+                    strokeWidth="2"
+                    markerEnd="url(#arrowhead)"
+                  />
+                </svg>
+              );
+            })
+          )}
+          
+          {/* Drawing connection line */}
+          {isDrawingConnection && connectionStart && (
+            <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+              {(() => {
+                const sourceStep = workflow.steps.find(s => s.id === connectionStart);
+                if (!sourceStep) return null;
+                
+                const sourceX = sourceStep.position.x * zoom + 200; // Right side of source node
+                const sourceY = sourceStep.position.y * zoom + 50;  // Middle of source node
+                
+                return (
+                  <line
+                    x1={sourceX}
+                    y1={sourceY}
+                    x2={mousePosition.x - canvasOffset.x}
+                    y2={mousePosition.y - canvasOffset.y}
+                    stroke="#6366F1"
+                    strokeWidth="2"
+                    strokeDasharray="5,5"
+                  />
+                );
+              })()}
+            </svg>
+          )}
+          
+          {/* SVG Definitions */}
+          <svg className="absolute" width="0" height="0">
+            <defs>
+              <marker
+                id="arrowhead"
+                markerWidth="10"
+                markerHeight="7"
+                refX="0"
+                refY="3.5"
+                orient="auto"
+              >
+                <polygon points="0 0, 10 3.5, 0 7" fill="#6366F1" />
+              </marker>
+            </defs>
+          </svg>
+          
           {/* Steps/Nodes */}
           {workflow.steps.map((step) => (
             <div
@@ -288,10 +389,42 @@ const WorkflowBuilder: React.FC = () => {
               {/* Connection ports */}
               <div className="mt-2 flex justify-between">
                 <div className="flex">
-                  <div className="w-4 h-4 rounded-full bg-gray-300 hover:bg-primary-500 cursor-pointer" />
+                  <div 
+                    className="w-4 h-4 rounded-full bg-gray-300 hover:bg-primary-500 cursor-pointer" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConnectionStart(step.id);
+                      setIsDrawingConnection(true);
+                    }}
+                  />
                 </div>
                 <div className="flex">
-                  <div className="w-4 h-4 rounded-full bg-gray-300 hover:bg-primary-500 cursor-pointer" />
+                  <div 
+                    className="w-4 h-4 rounded-full bg-gray-300 hover:bg-primary-500 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (connectionStart && connectionStart !== step.id) {
+                        // Create connection
+                        setWorkflow(prev => {
+                          const updatedSteps = prev.steps.map(s => {
+                            if (s.id === connectionStart) {
+                              return {
+                                ...s,
+                                connections: [
+                                  ...(s.connections || []),
+                                  { source: connectionStart, target: step.id }
+                                ]
+                              };
+                            }
+                            return s;
+                          });
+                          return { ...prev, steps: updatedSteps };
+                        });
+                      }
+                      setConnectionStart(null);
+                      setIsDrawingConnection(false);
+                    }}
+                  />
                 </div>
               </div>
             </div>

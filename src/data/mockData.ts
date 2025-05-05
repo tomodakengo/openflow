@@ -398,6 +398,59 @@ export const mockTasks = [
   },
 ];
 
+export const mockTeams = [
+  {
+    id: '1',
+    name: 'Engineering',
+    description: 'Software development team',
+    members: ['3', '4'],
+    createdAt: '2023-01-01T10:00:00Z',
+    updatedAt: '2023-01-15T14:30:00Z',
+  },
+  {
+    id: '2',
+    name: 'Marketing',
+    description: 'Marketing and communications team',
+    members: ['5'],
+    createdAt: '2023-01-02T11:00:00Z',
+    updatedAt: '2023-02-10T09:15:00Z',
+  },
+  {
+    id: '3',
+    name: 'Finance',
+    description: 'Finance and accounting team',
+    members: ['2'],
+    createdAt: '2023-01-03T09:30:00Z',
+    updatedAt: '2023-03-05T16:45:00Z',
+  },
+  {
+    id: '4',
+    name: 'Executive',
+    description: 'Executive leadership team',
+    members: ['1'],
+    createdAt: '2023-01-01T08:00:00Z',
+    updatedAt: '2023-01-01T08:00:00Z',
+  },
+  {
+    id: '5',
+    name: 'Product Development',
+    description: 'Product management team',
+    parentId: '1', // Child of Engineering
+    members: ['3'],
+    createdAt: '2023-02-15T13:30:00Z',
+    updatedAt: '2023-03-10T11:20:00Z',
+  },
+  {
+    id: '6',
+    name: 'QA',
+    description: 'Quality assurance team',
+    parentId: '1', // Child of Engineering
+    members: ['4'],
+    createdAt: '2023-02-16T14:45:00Z',
+    updatedAt: '2023-03-12T10:30:00Z',
+  },
+];
+
 export const mockDashboardStats = {
   activeWorkflows: 3,
   totalTasks: 7,
