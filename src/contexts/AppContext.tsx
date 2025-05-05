@@ -12,6 +12,8 @@ import {
   mockTasks,
   mockTeams,
 } from "../data/mockData";
+import { supabase } from "../lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 interface Team {
   id: string;
@@ -97,6 +99,7 @@ interface AppContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  setAuthStateFromSupabase: (session: Session) => void;
   addWorkflow: (
     workflow: Omit<Workflow, "id" | "createdAt" | "updatedAt">
   ) => Workflow;
@@ -139,36 +142,87 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>(mockTasks as unknown as Task[]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Check if user is already logged in (from local storage)
+  // Check if user is already logged in from Supabase session
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-    }
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setAuthStateFromSupabase(data.session);
+      }
+    };
+    
+    checkSession();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          setAuthStateFromSupabase(session);
+        } else {
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const login = async (email: string): Promise<boolean> => {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const user = users.find((u) => u.email === email);
-        if (user) {
-          setCurrentUser(user);
-          setIsAuthenticated(true);
-          localStorage.setItem("currentUser", JSON.stringify(user));
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      }, 800);
-    });
+  const setAuthStateFromSupabase = (session: Session) => {
+    const userEmail = session.user.email;
+    if (!userEmail) return;
+    
+    let user = users.find((u) => u.email === userEmail);
+    
+    if (user) {
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+    } else {
+      const newUser: User = {
+        id: session.user.id,
+        name: session.user.user_metadata.name || userEmail.split('@')[0],
+        email: userEmail,
+        role: 'user',
+      };
+      
+      setUsers([...users, newUser]);
+      setCurrentUser(newUser);
+      setIsAuthenticated(true);
+    }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem("currentUser");
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error("Login error:", error.message);
+        return false;
+      }
+      
+      if (data.session) {
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Login error:", error);
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const addWorkflow = (
@@ -429,6 +483,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     isAuthenticated,
     login,
     logout,
+    setAuthStateFromSupabase,
     addWorkflow,
     updateWorkflow,
     deleteWorkflow,
