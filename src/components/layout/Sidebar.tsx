@@ -1,8 +1,19 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, BarChart as FlowChart, FileText, CheckSquare, Users, BarChart, Code, Settings, HelpCircle, LogOut, Activity } from 'lucide-react';
+import { useApp } from '../../contexts/AppContext';
 
 const Sidebar: React.FC = () => {
+  const { logout } = useApp();
+  const navigate = useNavigate();
+  
+  const handleLogout = async () => {
+    console.log('Logout button clicked');
+    await logout();
+    console.log('Logout function completed');
+    navigate('/login');
+  };
+  
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <div className="flex flex-shrink-0 items-center px-6 py-4">
@@ -28,7 +39,7 @@ const Sidebar: React.FC = () => {
       </nav>
       
       <div className="flex-shrink-0 p-3 border-t border-gray-200">
-        <NavItem to="/logout" icon={<LogOut className="h-5 w-5" />} label="Logout" />
+        <LogoutButton onClick={handleLogout} icon={<LogOut className="h-5 w-5" />} label="Logout" />
       </div>
     </div>
   );
@@ -55,6 +66,24 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
       <span className="mr-3">{icon}</span>
       {label}
     </NavLink>
+  );
+};
+
+interface LogoutButtonProps {
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}
+
+const LogoutButton: React.FC<LogoutButtonProps> = ({ onClick, icon, label }) => {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex w-full items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+    >
+      <span className="mr-3">{icon}</span>
+      {label}
+    </button>
   );
 };
 

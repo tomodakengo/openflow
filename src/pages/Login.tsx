@@ -16,7 +16,7 @@ const Login: React.FC = () => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        setAuthStateFromSupabase(data.session);
+        await setAuthStateFromSupabase(data.session);
         navigate("/dashboard");
       }
     };
@@ -47,7 +47,7 @@ const Login: React.FC = () => {
       }
 
       if (data.session) {
-        setAuthStateFromSupabase(data.session);
+        await setAuthStateFromSupabase(data.session);
         navigate("/dashboard");
       }
     } catch (err) {
