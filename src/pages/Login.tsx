@@ -1,15 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { User, Lock, Activity } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 const Login: React.FC = () => {
-  const { login } = useApp();
+  const { setAuthStateFromSupabase } = useApp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        await setAuthStateFromSupabase(data.session);
+        navigate("/dashboard");
+      }
+    };
+    
+    checkSession();
+  }, [navigate, setAuthStateFromSupabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,15 +36,23 @@ const Login: React.FC = () => {
     setError("");
 
     try {
-      const success = await login(email, password);
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (success) {
-        navigate("/dashboard");
-      } else {
-        setError("Invalid email or password");
+      if (authError) {
+        setError(authError.message);
+        return;
       }
-    } catch {
+
+      if (data.session) {
+        await setAuthStateFromSupabase(data.session);
+        navigate("/dashboard");
+      }
+    } catch (err) {
       setError("An error occurred during login. Please try again.");
+      console.error("Login error:", err);
     } finally {
       setIsLoading(false);
     }

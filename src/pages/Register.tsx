@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, Lock, Mail, Activity } from "lucide-react";
+import { supabase } from "../lib/supabase";
+import { useApp } from "../contexts/AppContext";
 
 const Register: React.FC = () => {
+  const { setAuthStateFromSupabase } = useApp();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,13 +31,45 @@ const Register: React.FC = () => {
     setError("");
 
     try {
-      // In a real app, this would register the user with the backend
-      // For now, just redirect to login
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000);
-    } catch {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      });
+
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            name,
+            email,
+            role: 'user', // Default role
+          });
+
+        if (profileError) {
+          setError(profileError.message);
+          return;
+        }
+
+        if (authData.session) {
+          setAuthStateFromSupabase(authData.session);
+        }
+        
+        navigate("/dashboard");
+      }
+    } catch (err) {
       setError("An error occurred during registration. Please try again.");
+      console.error("Registration error:", err);
     } finally {
       setIsLoading(false);
     }
